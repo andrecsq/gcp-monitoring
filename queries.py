@@ -1,7 +1,5 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 bq_table = os.getenv('BIGQUERY_TABLE')
 
 billing_query = f"""

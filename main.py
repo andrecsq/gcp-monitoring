@@ -5,27 +5,20 @@ import pytz
 from datetime import datetime, timedelta
 
 from google.cloud import bigquery
-from google.oauth2 import service_account
 from table2ascii import table2ascii
-from dotenv import load_dotenv
 
 from queries import billing_query_services
 
-load_dotenv()
-
 def send_report_data_to_discord():
-    service_account_key = os.getenv('GCP_SERVICE_ACCOUNT_FILEPATH')
-    results = query_bigquery(service_account_key)
+    results = query_bigquery()
     ascii_table = convert_results_to_ascii_table(results)
-    print(ascii_table)
     discord_webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
     send_content_to_discord(discord_webhook_url, ascii_table)
 
 
-def query_bigquery(service_account_key):
+def query_bigquery():
 
-    credentials = service_account.Credentials.from_service_account_file(service_account_key)
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+    client = bigquery.Client()
     query_job = client.query(billing_query_services)
     results = query_job.result()
 
@@ -43,7 +36,6 @@ def convert_results_to_ascii_table(results, top_n = 5):
     for i in range(0, len(data_lists)):
         dl = data_lists[i]
         dl[0] =  dl[0][:(max_chars-2)] + ".." if len(dl[0]) > max_chars else dl[0]
-        print(type(dl[2]))
         dl[1] =  str(round(dl[1]))
         dl[2] =  ("+" if (dl[2] > 0) else "-") + str(abs(round(dl[2]))) + "%"
         dl[3] =  str(round(dl[3]))
@@ -77,13 +69,6 @@ def get_yesterday_formatted():
     yesterday = now - timedelta(days=1)
     formatted_yesterday = yesterday.strftime('%d/%m/%Y')
     return formatted_yesterday
-
-
-# def get_top_10_cost_from_field(df, field, n = 10):
-#     field_costs = df.groupby(field)['cost'].sum().reset_index()
-#     top_10_cost_from_field = field_costs.nlargest(n, 'cost')
-
-#     return top_10_cost_from_field.to_dict(orient='records')
 
 
 if __name__ == "__main__":
